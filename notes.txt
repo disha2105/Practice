@@ -309,4 +309,152 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+__________________________________________________________________
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.SecurityFilterChain;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+@Configuration
+@EnableWebSecurity
+public class SecurityConfiguration {
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests((requests) -> requests
+                .antMatchers("/h2-console/**").authenticated()
+                .anyRequest().authenticated()
+            )
+            .formLogin((login) -> login
+                .loginPage("/login")
+                .permitAll()
+            )
+            .logout((logout) -> logout
+                .permitAll()
+            );
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+____________________________________________________________________________________________
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    roles VARCHAR(255)
+);
+______________________________________________________
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+// Inject PasswordEncoder into your service or controller
+private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+// Example of registering a new user
+public void registerUser(String username, String password) {
+    String encodedPassword = passwordEncoder.encode(password);
+    userRepository.save(new User(username, encodedPassword));
+}
+_______________________________________________________________________
+
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+// Inject UserDetailsService into your service or controller
+private UserDetailsService userDetailsService;
+
+// Example of authenticating a user
+public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+    // Check if the password matches the encoded password
+    if (!passwordEncoder.matches(password, userDetails.getPassword())) {
+        throw new UsernameNotFoundException("Invalid password");
+    }
+    return userDetails;
+}
+__________________________________________________________________________
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.SecurityFilterChain;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfiguration {
+
+    @Autowired
+    private UserDetailsService userDetailsService;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeRequests((requests) -> requests
+                .antMatchers("/h2-console/**").authenticated()
+                .anyRequest().authenticated()
+            )
+            .formLogin((login) -> login
+                .loginPage("/login")
+                .permitAll()
+            )
+            .logout((logout) -> logout
+                .permitAll()
+            );
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+    }
+}
+__________________________________________________________________________________________________
+
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+public class CustomUserDetailsService implements UserDetailsService {
+
+    // Inject your UserRepository or UserService here
+    private UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // Retrieve user from the database based on the provided username
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found with username: " + username);
+        }
+        // Convert the User object to UserDetails and return
+        return new org.springframework.security.core.userdetails.User(
+            user.getUsername(),
+            user.getPassword(),
+            user.getRoles()
+        );
+    }
+}
+_____________________________________________________________________________________________________________________-
