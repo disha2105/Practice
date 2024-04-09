@@ -119,3 +119,37 @@ button[type="submit"] {
 button[type="submit"]:hover {
   background-color: #0056b3;
 }
+
+____________________________________________________
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+            .authorizeRequests((authz) -> authz
+                .antMatchers("/h2-console/**").authenticated()
+                .anyRequest().authenticated()
+            )
+            .formLogin((login) -> login
+                .loginPage("/login")
+                .permitAll()
+            )
+            .logout((logout) -> logout
+                .permitAll()
+            );
+
+        // Disable CSRF (Cross-Site Request Forgery) for H2 console
+        http.csrf().ignoringAntMatchers("/h2-console/**");
+
+        // Allow framing of the H2 console
+        http.headers().frameOptions().sameOrigin();
+    }
+}
+
