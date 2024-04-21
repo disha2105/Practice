@@ -1,21 +1,62 @@
-<dependency>
-    <groupId>io.jsonwebtoken</groupId>
-    <artifactId>jjwt-api</artifactId>
-    <version>0.11.2</version>
-</dependency>
-<dependency>
-    <groupId>io.jsonwebtoken</groupId>
-    <artifactId>jjwt-impl</artifactId>
-    <version>0.11.2</version>
-    <scope>runtime</scope>
-</dependency>
-<dependency>
-    <groupId>io.jsonwebtoken</groupId>
-    <artifactId>jjwt-jackson</artifactId>
-    <version>0.11.2</version>
-    <scope>runtime</scope>
-</dependency>
-_____
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class AuthenticationController {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @PostMapping("/login")
+    public ResponseEntity<?> authenticateUser(@RequestBody LoginForm loginForm) {
+        // Retrieve user from the database
+        User user = userRepository.findByUsername(loginForm.getUsername());
+        if (user == null || !passwordEncoder.matches(loginForm.getPassword(), user.getPassword())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+        }
+
+        // Redirect the user to the H2 console URL
+        return ResponseEntity.ok("Redirect to H2 console URL"); // Replace with actual URL
+    }
+}
+___________________________
+import React, { useState } from 'react';
+
+const LoginForm = ({ onSubmit }) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit({ username, password });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        Username:
+        <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
+      </label>
+      <label>
+        Password:
+        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      </label>
+      <button type="submit">Login</button>
+    </form>
+  );
+};
+
+export default LoginForm;
+
+_______________________
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'io.jsonwebtoken:jjwt-api:0.11.2'
