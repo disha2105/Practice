@@ -41,39 +41,30 @@ function LoginPage() {
 export default LoginPage;
 
 _______________________________
-import React, { useState } from 'react';
-
-const LoginForm = () => {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-
-    const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log(username);
+        console.log(password);
+
         try {
-            const response = await fetch('/login', {
-                method: 'POST',
+            const response = await fetch("http://localhost:9090/authenticate", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ username, password }), // Send username and password in JSON format
+                body: JSON.stringify({ username, password }),
             });
+
+            if (!response.ok) {
+                throw new Error("Failed to authenticate");
+            }
+
             const data = await response.json();
-            // Handle response from backend (e.g., show success or error message)
+            console.log("Response:", data);
         } catch (error) {
-            console.error('Login error:', error);
+            console.error("Error:", error.message);
         }
     };
-
-    return (
-        <form onSubmit={handleSubmit}>
-            <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
-            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <button type="submit">Login</button>
-        </form>
-    );
-};
-
-export default LoginForm;
 ____________________________________
 
 import org.springframework.beans.factory.annotation.Autowired;
